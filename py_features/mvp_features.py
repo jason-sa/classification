@@ -95,7 +95,7 @@ print()
 # reduce data set size for MVP
 events_trimmed = events[events.local_date_time >= DATE_FILTER]
 
-print(f'Total number of events: {events_trimmed.shape[0]:,}')
+print(f'Total number of trimmed events: {events_trimmed.shape[0]:,}')
 print()
 
 # first calcualte sessions for each buy transaction
@@ -140,6 +140,7 @@ feature_dfs.append(session_length(events_trimmed))
 design_df = pd.concat(feature_dfs,axis=1, sort=True)
 design_df = design_df.fillna(0)
 design_df.to_pickle('../data/design.pkl')
+events_trimmed.to_pickle('../data/events_trimmed.pkl')
 
 print(f'Design observations: {design_df.shape}')
 print()
