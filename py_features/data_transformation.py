@@ -97,6 +97,9 @@ visitors = order_history[~order_history.session_id.str.endswith('_1')].visitorid
 order_history = order_history[order_history.visitorid.isin(visitors)]
 order_history = order_history.groupby(['session_id','visitorid','itemid'])['local_date_time'].max().reset_index()
 
+# remove dup items which were added twice in the event log
+order_history = order_history.groupby(['session_id','visitorid','itemid'])['local_date_time'].max().reset_index()
+
 unique_visitor_item = order_history.loc[:,['visitorid', 'itemid']].drop_duplicates()
 total_order_history = unique_visitor_item.merge(order_history, how='outer', on='visitorid')
 
@@ -109,6 +112,22 @@ total_order_history.loc[mask, 'in_cart'] = 1
 # Clean-up columns
 total_order_history.drop(columns='itemid_y', inplace=True)
 total_order_history.rename(columns={'itemid_x':'itemid'}, inplace=True)
+
+# remove dups where the items are not in the cart (in_cart = 0)
+total_order_history['item_session'] = total_order_history.itemid.astype(str) + '_' + total_order_history.session_id
+total_order_history[total_order_history.in_cart == 1].item_session.unique()
+
+mask = ((total_order_history.item_session
+             .isin(total_order_history[total_order_history.in_cart == 1]
+                     .item_session
+                     .unique()
+                  ))
+       & (total_order_history.in_cart == 0))
+total_order_history = total_order_history[~mask]
+total_order_history = (total_order_history
+                       .groupby(['visitorid','itemid','session_id','in_cart','item_session'])['local_date_time']
+                       .max()
+                       .reset_index())
 
 # calacualte order sequence
 total_order_history['seq'] = (total_order_history.session_id
