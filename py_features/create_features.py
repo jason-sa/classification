@@ -1,13 +1,41 @@
-''' Create feature set for modeling
+''' Add features to the observations data set for modeling
 
 Author: Jason Salazer-Adams
-Date: 10/23/2018
+Date: 10/24/2018
 
 '''
 import pandas as pd
-import numpy as np
+# import numpy as np
 
+def load_pickle(name):
+    return pd.read_pickle(f'../data/{name}.pkl')
 
+def calc_view_counts(prior_df, events, c_name):
+    merge_df = pd.merge(prior_df, events, on='session_id')
+    merge_df = merge_df[merge_df.event == 'view']
+    merge_df = merge_df.groupby(['visitor_id'])['event'].count().reset_index()
+    merge_df = merge_df.rename(columns={'event':c_name})
+
+    return merge_df
+
+def gen_features():
+    prior_df = load_pickle('prior_observations')
+    events = load_pickle('events_trimmed')
+    observations = load_pickle('observations')
+
+    # calculate number of views in prior data
+    view_counts = calc_view_counts(prior_df, events, 'view_count')
+
+    # add view count to observations
+    observations = pd.merge(observations, view_counts, on='visitor_id', how='left')
+    observations.view_count = observations.view_count.fillna(0)
+
+    return observations
+
+if __name__ == '__main__':
+    print(gen_features().info())
+
+'''
 
 # get transformed data
 observations = pd.read_pickle('../data/observations.pkl')
@@ -45,3 +73,4 @@ X = observations.drop(columns={'in_cart','visitorid','itemid','local_date_time',
 y.to_pickle('../data/y.pkl')
 X.to_pickle('../data/X.pkl')
 observations.to_pickle('../data/observations_trans.pkl')
+'''
