@@ -1,7 +1,8 @@
-''' Transformation of raw web traffic data from retail rocket into addtocart observations
+''' Transform events raw data into sessions. Can also split the event data into an observation data frame
+    and prior data frame
 
 Author: Jason Salazer-Adams
-Date: 10/22/2018
+Date: 10/24/2018
 
 '''
 import pandas as pd
@@ -12,7 +13,7 @@ pd.set_option('mode.chained_assignment',None)
 
 DATE_FILTER = datetime(2015, 9, 1)
 EVENTS_FILE = '../data/events.csv'
-SESSION_TIME_LIMIT = 60 ## minutes between clicks
+SESSION_TIME_LIMIT = 30 ## minutes between clicks
 
 def convert_to_local(x):
     ''' Helper function to convert timestamp in milli-seconds to a date time
@@ -69,7 +70,7 @@ def load():
 
         mask = (events_trimmed.minutes_since_prev_event > SESSION_TIME_LIMIT)
         events_trimmed = calc_session_id(events_trimmed, mask)
-        
+
         events_trimmed['seq'] = (events_trimmed.session_id
                                                 .str.split('_')
                                                 .apply(lambda x: x[1])
@@ -79,9 +80,32 @@ def load():
                                         .groupby('visitorid')['seq']
                                         .rank(method='dense'))
 
-        # events_trimmed['rnk'] = events_trimmed.groupby('visitorid')['session_id'].rank()
-
         return events_trimmed
+
+def create_observations(df, seq):
+        prior_observations = df[df.seq <= seq]
+        prior_observations['buy_event'] = 0
+        prior_observations.loc[prior_observations.event == 'transaction','buy_event'] = 1
+        prior_observations = prior_observations.groupby(['session_id','seq'])['buy_event'].max().reset_index()
+
+        observations = prior_observations[prior_observations.seq == seq]
+        prior_observations = prior_observations[prior_observations.seq < seq]
+
+        return observations, prior_observations
+
+def write_to_pickle(df,name):
+        df.to_pickle(f'../data/{name}.pkl')
+
+
+
+if __name__ == '__main__':
+        events_trimmed = load()
+        observations, prior_observations = create_observations(events_trimmed, 2)
+        # print(events_trimmed[events_trimmed.visitorid == 152963])
+        # print(observations)
+        write_to_pickle(events_trimmed,'events_trimmed')
+        write_to_pickle(observations, 'observations')
+        write_to_pickle(prior_observations, 'prior_observations')
 
         '''
         # first calcualte sessions for each buy transaction
@@ -182,7 +206,3 @@ def load():
         observations.to_pickle('../data/observations.pkl')
         prior_observations.to_pickle('../data/prior_observations.pkl')
         '''
-
-if __name__ == '__main__':
-        events_trimmed = load()
-        print(events_trimmed[events_trimmed.visitorid == 152963])
