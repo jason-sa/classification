@@ -10,7 +10,7 @@ from datetime import datetime
 
 pd.set_option('mode.chained_assignment',None)
 
-DATE_FILTER = datetime(2015, 8, 15)
+DATE_FILTER = datetime(2014, 8, 15)
 EVENTS_FILE = '../data/events.csv'
 SESSION_TIME_LIMIT = 600 ## Should consider building a time limit per user, instead of global
 
