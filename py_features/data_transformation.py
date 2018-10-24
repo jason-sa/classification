@@ -88,6 +88,12 @@ def create_observations(df, seq):
         prior_observations.loc[prior_observations.event == 'transaction','buy_event'] = 1
         prior_observations = prior_observations.groupby(['session_id','seq'])['buy_event'].max().reset_index()
 
+        prior_observations['visitor_id'] = (prior_observations.session_id
+                                                .str.split('_')
+                                                .apply(lambda x: x[0])
+                                                .astype(int))
+        
+
         observations = prior_observations[prior_observations.seq == seq]
         prior_observations = prior_observations[prior_observations.seq < seq]
 
@@ -102,7 +108,7 @@ if __name__ == '__main__':
         events_trimmed = load()
         observations, prior_observations = create_observations(events_trimmed, 2)
         # print(events_trimmed[events_trimmed.visitorid == 152963])
-        # print(observations)
+        print(observations)
         write_to_pickle(events_trimmed,'events_trimmed')
         write_to_pickle(observations, 'observations')
         write_to_pickle(prior_observations, 'prior_observations')
