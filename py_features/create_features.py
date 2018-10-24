@@ -6,6 +6,7 @@ Date: 10/24/2018
 '''
 import pandas as pd
 # import numpy as np
+import data_transformation as dt
 
 def load_pickle(name):
     return pd.read_pickle(f'../data/{name}.pkl')
@@ -33,7 +34,9 @@ def gen_features():
     return observations
 
 if __name__ == '__main__':
-    print(gen_features().info())
+    obs = gen_features()
+    print(obs.info())
+    dt.write_to_pickle(obs, 'observations')
 
 '''
 
