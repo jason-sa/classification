@@ -84,7 +84,7 @@ def load():
         return events_trimmed
 
 def create_observations(df, seq):
-        prior_observations = df[df.seq <= seq]
+        prior_observations = df[df.seq <= seq] # could get session != seq. i think could be OK
         prior_observations['buy_event'] = 0
         prior_observations.loc[prior_observations.event == 'transaction','buy_event'] = 1
         prior_observations = prior_observations.groupby(['session_id','seq'])['buy_event'].max().reset_index()
