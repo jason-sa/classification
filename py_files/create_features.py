@@ -24,6 +24,14 @@ def calc_session_length(prior_df, events, c_name):
 
     return merge_df
 
+def calc_item_view_counts(prior_df, events, c_name):
+    merge_df = pd.merge(prior_df, events, on='session_id')
+    merge_df = merge_df[merge_df.event == 'view']
+    merge_df = merge_df.groupby(['visitor_id'])['itemid'].nunique().reset_index()
+    merge_df = merge_df.rename(columns={'itemid':c_name})
+
+    return merge_df
+
 def add_feature(obs, feature, c_name, na_val):
     obs = pd.merge(obs, feature, how='left', on='visitor_id')
     obs.loc[:, c_name] = obs.loc[:, c_name].fillna(na_val)
@@ -38,17 +46,21 @@ def gen_features():
     # calculate features
     view_counts = calc_view_counts(prior_df, events, 'view_count')
     session_length = calc_session_length(prior_df, events, 'session_length')
+    item_views = calc_item_view_counts(prior_df, events, 'item_views')
 
     # add features to observations
     observations = add_feature(observations, view_counts, 'view_count', 0)
     observations = add_feature(observations, session_length, 'session_length', 1e6)
+    observations = add_feature(observations, item_views, 'item_views',0)
 
     return observations
 
 if __name__ == '__main__':
     obs = gen_features()
-    print(obs.info())
     utils.write_to_pickle(obs, 'features')
+    print(obs.info())
+    print(obs.describe())
+    
 
 '''
 
