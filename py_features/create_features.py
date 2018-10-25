@@ -27,7 +27,7 @@ def gen_features():
     # calculate number of views in prior data
     view_counts = calc_view_counts(prior_df, events, 'view_count')
 
-    # add view count to observations
+    # add view count to observations (probably should do a function to add all features)
     observations = pd.merge(observations, view_counts, on='visitor_id', how='left')
     observations.view_count = observations.view_count.fillna(0)
 
