@@ -48,6 +48,16 @@ def calc_transaction_counts(prior_df, events, c_name):
 
     return merge_df
 
+def calc_avg_avail_views(prior_df, events, c_name):
+    merge_df = pd.merge(prior_df, events, on='session_id')
+    merge_df = merge_df[merge_df.event == 'view']
+    merge_df = merge_df.groupby(['visitor_id'])['available'].agg(['count','sum'])
+    merge_df[c_name] = merge_df['sum'] / merge_df['count']
+    merge_df = merge_df.drop(columns=['count','sum'])
+
+    return merge_df
+
+
 def add_feature(obs, feature, c_name, na_val):
     obs = pd.merge(obs, feature, how='left', on='visitor_id')
     obs.loc[:, c_name] = obs.loc[:, c_name].fillna(na_val)
@@ -65,13 +75,17 @@ def gen_features():
     item_views = calc_item_view_counts(prior_df, events, 'item_views')
     addtocart_counts = calc_add_counts(prior_df, events, 'add_to_cart_count')
     transaction_counts = calc_transaction_counts(prior_df, events, 'transaction_count')
+    average_item_avail = calc_avg_avail_views(prior_df, events, 'avg_avail')
 
-    # add features to observations
-    observations = add_feature(observations, view_counts, 'view_count', 0)
-    observations = add_feature(observations, session_length, 'session_length', 1e6)
-    observations = add_feature(observations, item_views, 'item_views',0)
-    observations = add_feature(observations, addtocart_counts, 'add_to_cart_count', 0)
-    observations = add_feature(observations, transaction_counts, 'transaction_count', 0)
+    # add features to observations (turn this into a loop with **kwargs if time permits)
+    # features = {}
+    observations = add_feature(observations, view_counts, 'view_count', -1)
+    observations = add_feature(observations, session_length, 'session_length', -1)
+    observations = add_feature(observations, item_views, 'item_views',-1)
+    observations = add_feature(observations, addtocart_counts, 'add_to_cart_count', -1)
+    observations = add_feature(observations, transaction_counts, 'transaction_count', -1)
+    observations = add_feature(observations, average_item_avail, 'avg_avail', -1)
+
     # number of different categories viewed
     # availability of the items
     # maybe last category and then figure out how to one-hot encode
@@ -80,6 +94,7 @@ def gen_features():
 
 if __name__ == '__main__':
     obs = gen_features()
+    obs.head()
     utils.write_to_pickle(obs, 'features')
     print(obs.info())
     print(obs.describe())
