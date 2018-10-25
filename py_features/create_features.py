@@ -19,24 +19,38 @@ def calc_view_counts(prior_df, events, c_name):
 
     return merge_df
 
+def calc_session_length(prior_df, events, c_name):
+    merge_df = pd.merge(prior_df, events, on='session_id')
+    merge_df = merge_df.groupby(['visitor_id'])['minutes_since_prev_event'].count().reset_index()
+    merge_df = merge_df.rename(columns={'minutes_since_prev_event':c_name})
+
+    return merge_df
+
+def add_feature(obs, feature, c_name, na_val):
+    obs = pd.merge(obs, feature, how='left', on='visitor_id')
+    obs.loc[:, c_name] = obs.loc[:, c_name].fillna(na_val)
+
+    return obs
+
 def gen_features():
     prior_df = load_pickle('prior_observations')
     events = load_pickle('events_trimmed')
     observations = load_pickle('observations')
 
-    # calculate number of views in prior data
+    # calculate features
     view_counts = calc_view_counts(prior_df, events, 'view_count')
+    session_length = calc_session_length(prior_df, events, 'session_length')
 
-    # add view count to observations (probably should do a function to add all features)
-    observations = pd.merge(observations, view_counts, on='visitor_id', how='left')
-    observations.view_count = observations.view_count.fillna(0)
+    # add features to observations
+    observations = add_feature(observations, view_counts, 'view_count', 0)
+    observations = add_feature(observations, session_length, 'session_length', 1e6)
 
     return observations
 
 if __name__ == '__main__':
     obs = gen_features()
     print(obs.info())
-    dt.write_to_pickle(obs, 'observations')
+    dt.write_to_pickle(obs, 'features')
 
 '''
 

@@ -10,63 +10,60 @@ import numpy as np
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import f1_score
 
-from sklearn.neighbors import KNeighborsClassifier as KNN
+# from sklearn.neighbors import KNeighborsClassifier as KNN
 from sklearn.linear_model import LogisticRegression
 from sklearn.svm import SVC
 from sklearn.tree import DecisionTreeClassifier
 from sklearn.ensemble import RandomForestClassifier
 
-from sklearn.model_selection import GridSearchCV
+from skopt.space import Real, Categorical, Integer
+from skopt import BayesSearchCV
 
 def load_pickle(name):
     return pd.read_pickle(f'../data/{name}.pkl')
 
 def create_Xy(df):
     y = df.buy_event
-    X = df.drop(columns='buy_event')
+    X = df.iloc[:,4:]
     X_train, X_test, y_train, y_test = train_test_split(X, y, random_state = 1234)
 
     return X, y, X_train, X_test, y_train, y_test
 
 def cv_models(X_train, y_train):
-    models = [('knn', KNN), 
-            ('logistic', LogisticRegression),
+    models = [('logistic', LogisticRegression),
             ('tree', DecisionTreeClassifier),
             ('forest', RandomForestClassifier)
             ]
 
     param_choices = [
         {
-            'n_neighbors': range(1, 12)
+            'C': Real(1e-3, 1e6),
+            'penalty': Categorical(['l1', 'l2'])
         },
         {
-            'C': np.logspace(-3,6, 12),
-            'penalty': ['l1', 'l2']
+            'max_depth': Integer(1,5),
+            'min_samples_leaf': Integer(3,10)
         },
         {
-            'max_depth': [1,2,3,4,5],
-            'min_samples_leaf': [3,6,10]
-        },
-        {
-            'n_estimators': [50, 100, 200],
-            'max_depth': [1,2,3,4,5],
-            'min_samples_leaf': [3,6,10]
+            'n_estimators': Integer(50,200),
+            'max_depth': Integer(1, 5),
+            'min_samples_leaf': Integer(3, 10)
         }
     ]
 
     grids = {}
     for model_info, params in zip(models, param_choices):
         name, model = model_info
-        grid = GridSearchCV(model(), params)
+        grid = BayesSearchCV(model(), params, scoring='f1', n_iter=20)
         grid.fit(X_train, y_train)
-        s = f"{name}: best score: {grid.best_score_}"
-        print(s)
+        # s = f"{name}: best score: {grid.best_score_}"
+        # print(s)
         grids[name] = grid
     
-    return grid
+    return grids
 
 def run_models():
-    obs = load_pickle('observations')
+    obs = load_pickle('features')
 
     # build X,y and perform train test split
     X, y, X_train, X_test, y_train, t_test = create_Xy(obs)
@@ -77,4 +74,6 @@ def run_models():
     return results
 
 if __name__ == '__main__':
-    run_models()
+    results = run_models()
+    for k, v in results.items():
+        print(f'{k} best F1 score: {v.best_score_}')
