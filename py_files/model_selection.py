@@ -64,7 +64,8 @@ def cv_models(X_train, y_train):
         {
             'loss': Categorical(['deviance', 'exponential']),
             'learning_rate': Real(1e-2, 1),
-            'n_estimators': Integer(100, 500)
+            'n_estimators': Integer(100, 500),
+            'random_state': [1234]
         },
         {
             'n_estimators': Integer(50,200),
@@ -111,5 +112,8 @@ def run_models():
 
 if __name__ == '__main__':
     results = run_models()
-    for k, v in results.items():
-        print(f'{k} best F1 score: {v.best_score_}')
+    
+    ### need to pickle the best model
+
+    # for k, v in results.items():
+    #     print(f'{k} best F1 score: {v.best_score_}')
