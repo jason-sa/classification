@@ -104,7 +104,7 @@ if __name__ == '__main__':
         events_trimmed = load()
         observations, prior_observations = create_observations(events_trimmed, 2)
         # print(events_trimmed[events_trimmed.visitorid == 152963])
-        print(observations)
+        # print(observations)
         utils.write_to_pickle(events_trimmed,'events_trimmed')
         utils.write_to_pickle(observations, 'observations')
         utils.write_to_pickle(prior_observations, 'prior_observations')
