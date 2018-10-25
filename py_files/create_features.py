@@ -72,6 +72,9 @@ def gen_features():
     observations = add_feature(observations, item_views, 'item_views',0)
     observations = add_feature(observations, addtocart_counts, 'add_to_cart_count', 0)
     observations = add_feature(observations, transaction_counts, 'transaction_count', 0)
+    # number of different categories viewed
+    # availability of the items
+    # maybe last category and then figure out how to one-hot encode
 
     return observations
 
