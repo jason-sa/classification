@@ -18,8 +18,10 @@ from sklearn.linear_model import LogisticRegression
 from sklearn.svm import SVC
 from sklearn.tree import DecisionTreeClassifier
 from sklearn.ensemble import RandomForestClassifier
+from sklearn.ensemble import GradientBoostingClassifier
+from sklearn.naive_bayes import GaussianNB
+
 from sklearn.preprocessing import StandardScaler
-from sklearn.pipeline import Pipeline
 
 from skopt.space import Real, Categorical, Integer
 from skopt import BayesSearchCV
@@ -49,8 +51,9 @@ def create_Xy(df):
 
 def cv_models(X_train, y_train):
     models = [('logistic', LogisticRegression),
-            ('tree', DecisionTreeClassifier), # replace with gradient boosting
-            ('forest', RandomForestClassifier)
+            ('gb', GradientBoostingClassifier), # replace with gradient boosting
+            ('forest', RandomForestClassifier),
+            ('Gaussian NB', GaussianNB)
             ] # should add naive bayes
 
     param_choices = [
@@ -59,14 +62,17 @@ def cv_models(X_train, y_train):
             'penalty': Categorical(['l1', 'l2'])
         },
         {
-            'max_depth': Integer(1,5),
-            'min_samples_leaf': Integer(3,10)
+            'loss': Categorical(['deviance', 'exponential']),
+            'learning_rate': Real(1e-2, 0.5)
         },
         {
             'n_estimators': Integer(50,200),
             'max_depth': Integer(1, 5)
             # ,
             # 'min_samples_leaf': Integer(3, 10)
+        },
+        {
+
         }
     ]
 
@@ -84,8 +90,8 @@ def cv_models(X_train, y_train):
         else:
             grid.fit(X_train, y_train)
 
-        # s = f"{name}: best score: {grid.best_score_}"
-        # print(s)
+        s = f"{name}: best score: {grid.best_score_}"
+        print(s)
         grids[name] = grid
     
     return grids
