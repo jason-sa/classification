@@ -14,6 +14,8 @@ pd.set_option('mode.chained_assignment',None)
 
 DATE_FILTER = datetime(2015, 9, 1)
 EVENTS_FILE = '../data/events.csv'
+ITEM_PROP1 = '../data/item_properties_part1.csv'
+ITEM_PROP2 = '../data/item_properties_part2.csv'
 SESSION_TIME_LIMIT = 30 ## minutes between clicks
 
 def convert_to_local(x):
@@ -45,10 +47,36 @@ def calc_session_id(df, mask):
     
     return df
 
+def add_item_property(events_df, property_df, p_name):
+    
+    events_df.sort_values('local_date_time', inplace=True)
+    property_df.sort_values('local_date_time', inplace=True)
+
+    events_df = pd.merge_asof(events_df, property_df[property_df.property == p_name], 
+                                   on='local_date_time',
+                                   by='itemid')
+
+    events_df = events_df.rename(columns={
+                                                        'timestamp_x': 'timestamp',
+                                                        'value': p_name
+                                                    })
+
+    events_df = events_df.drop(columns=['timestamp_y', 'property'])
+    
+    return events_df
+
 def load():
         # get data
         events = pd.read_csv(EVENTS_FILE)
+        item_p1 = pd.read_csv(ITEM_PROP1)
+        item_p2 = pd.read_csv(ITEM_PROP2)
+
         events['local_date_time'] = events.timestamp.apply(convert_to_local)
+        item_p1['local_date_time'] = item_p1.timestamp.apply(convert_to_local)
+        item_p2['local_date_time'] = item_p2.timestamp.apply(convert_to_local)
+
+        item_p = pd.concat([item_p1, item_p2], axis=0)
+        
         print(f'Total number of events: {events.shape[0]:,}')
         print()
 
@@ -81,6 +109,9 @@ def load():
                                         .groupby('visitorid')['seq']
                                         .rank(method='dense'))
 
+        events_trimmed = add_item_property(events_trimmed, item_p, 'categoryid')
+        events_trimmed = add_item_property(events_trimmed, item_p, 'available')
+        
         return events_trimmed
 
 def create_observations(df, seq):
