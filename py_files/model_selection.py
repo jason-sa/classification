@@ -37,9 +37,9 @@ def create_Xy(df):
 
 def cv_models(X_train, y_train):
     models = [('logistic', LogisticRegression),
-            ('tree', DecisionTreeClassifier),
+            ('tree', DecisionTreeClassifier), # replace with gradient boosting
             ('forest', RandomForestClassifier)
-            ]
+            ] # should add naive bayes
 
     param_choices = [
         {
@@ -52,8 +52,9 @@ def cv_models(X_train, y_train):
         },
         {
             'n_estimators': Integer(50,200),
-            'max_depth': Integer(1, 5),
-            'min_samples_leaf': Integer(3, 10)
+            'max_depth': Integer(1, 5)
+            # ,
+            # 'min_samples_leaf': Integer(3, 10)
         }
     ]
 
