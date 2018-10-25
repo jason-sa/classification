@@ -7,8 +7,11 @@ Date: 10/24/2018
 import pandas as pd 
 import numpy as np
 
+import utils
+
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import f1_score
+from sklearn.model_selection import StratifiedKFold
 
 # from sklearn.neighbors import KNeighborsClassifier as KNN
 from sklearn.linear_model import LogisticRegression
@@ -21,19 +24,28 @@ from sklearn.pipeline import Pipeline
 from skopt.space import Real, Categorical, Integer
 from skopt import BayesSearchCV
 
+from imblearn.over_sampling import SMOTE
+
+from collections import Counter
 # only uncomment whem comfortable with the warnings
 import warnings
 warnings.filterwarnings("ignore")
-
-def load_pickle(name):
-    return pd.read_pickle(f'../data/{name}.pkl')
 
 def create_Xy(df):
     y = df.buy_event
     X = df.iloc[:,4:]
     X_train, X_test, y_train, y_test = train_test_split(X, y, random_state = 1234)
 
-    return X, y, X_train, X_test, y_train, y_test
+    # up-sample with SMOTE
+    print(f'Prior to re-sample: {Counter(y_train)}')
+
+    sm = SMOTE(random_state=1234)
+
+    X_res, y_res = sm.fit_sample(X_train, y_train)
+
+    print(f'After re-sample: {Counter(y_res)}')
+
+    return X, y, X_res, X_test, y_res, y_test
 
 def cv_models(X_train, y_train):
     models = [('logistic', LogisticRegression),
@@ -58,10 +70,12 @@ def cv_models(X_train, y_train):
         }
     ]
 
+    skf = StratifiedKFold(n_splits=10, random_state=1234)
+
     grids = {}
     for model_info, params in zip(models, param_choices):
         name, model = model_info
-        grid = BayesSearchCV(model(), params, scoring='f1', n_iter=20)
+        grid = BayesSearchCV(model(), params, scoring='f1', n_iter=20, cv=skf)
 
         if name == 'logistic':
             ssX = StandardScaler()
@@ -77,7 +91,7 @@ def cv_models(X_train, y_train):
     return grids
 
 def run_models():
-    obs = load_pickle('features')
+    obs = utils.load_pickle('features')
 
     # build X,y and perform train test split
     X, y, X_train, X_test, y_train, t_test = create_Xy(obs)
