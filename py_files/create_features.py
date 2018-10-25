@@ -7,9 +7,7 @@ Date: 10/24/2018
 import pandas as pd
 # import numpy as np
 import data_transformation as dt
-
-def load_pickle(name):
-    return pd.read_pickle(f'../data/{name}.pkl')
+import utils
 
 def calc_view_counts(prior_df, events, c_name):
     merge_df = pd.merge(prior_df, events, on='session_id')
@@ -33,9 +31,9 @@ def add_feature(obs, feature, c_name, na_val):
     return obs
 
 def gen_features():
-    prior_df = load_pickle('prior_observations')
-    events = load_pickle('events_trimmed')
-    observations = load_pickle('observations')
+    prior_df = utils.load_pickle('prior_observations')
+    events = utils.load_pickle('events_trimmed')
+    observations = utils.load_pickle('observations')
 
     # calculate features
     view_counts = calc_view_counts(prior_df, events, 'view_count')
@@ -50,7 +48,7 @@ def gen_features():
 if __name__ == '__main__':
     obs = gen_features()
     print(obs.info())
-    dt.write_to_pickle(obs, 'features')
+    utils.write_to_pickle(obs, 'features')
 
 '''
 

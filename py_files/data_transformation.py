@@ -8,6 +8,7 @@ Date: 10/24/2018
 import pandas as pd
 import numpy as np
 from datetime import datetime
+import utils
 
 pd.set_option('mode.chained_assignment',None)
 
@@ -99,19 +100,14 @@ def create_observations(df, seq):
 
         return observations, prior_observations
 
-def write_to_pickle(df,name):
-        df.to_pickle(f'../data/{name}.pkl')
-
-
-
 if __name__ == '__main__':
         events_trimmed = load()
         observations, prior_observations = create_observations(events_trimmed, 2)
         # print(events_trimmed[events_trimmed.visitorid == 152963])
         print(observations)
-        write_to_pickle(events_trimmed,'events_trimmed')
-        write_to_pickle(observations, 'observations')
-        write_to_pickle(prior_observations, 'prior_observations')
+        utils.write_to_pickle(events_trimmed,'events_trimmed')
+        utils.write_to_pickle(observations, 'observations')
+        utils.write_to_pickle(prior_observations, 'prior_observations')
 
         '''
         # first calcualte sessions for each buy transaction
