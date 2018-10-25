@@ -39,21 +39,21 @@ def create_Xy(df):
     X_train, X_test, y_train, y_test = train_test_split(X, y, random_state = 1234)
 
     # up-sample with SMOTE
-    print(f'Prior to re-sample: {Counter(y_train)}')
+    # print(f'Prior to re-sample: {Counter(y_train)}')
 
     sm = SMOTE(random_state=1234)
 
     X_res, y_res = sm.fit_sample(X_train, y_train)
 
-    print(f'After re-sample: {Counter(y_res)}')
+    # print(f'After re-sample: {Counter(y_res)}')
 
     return X, y, X_res, X_test, y_res, y_test
 
 def cv_models(X_train, y_train):
     models = [('logistic', LogisticRegression),
-            ('gb', GradientBoostingClassifier), # replace with gradient boosting
-            ('forest', RandomForestClassifier),
-            ('Gaussian NB', GaussianNB)
+            ('gb', GradientBoostingClassifier), # need to set a random state for consistency
+            ('forest', RandomForestClassifier)#,
+            # ('Gaussian NB', GaussianNB)
             ] # should add naive bayes
 
     param_choices = [
@@ -63,17 +63,19 @@ def cv_models(X_train, y_train):
         },
         {
             'loss': Categorical(['deviance', 'exponential']),
-            'learning_rate': Real(1e-2, 0.5)
+            'learning_rate': Real(1e-2, 1),
+            'n_estimators': Integer(100, 500)
         },
         {
             'n_estimators': Integer(50,200),
             'max_depth': Integer(1, 5)
             # ,
             # 'min_samples_leaf': Integer(3, 10)
-        },
-        {
-
         }
+        # ,
+        # {
+
+        # }
     ]
 
     skf = StratifiedKFold(n_splits=10, random_state=1234)
