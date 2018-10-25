@@ -15,9 +15,15 @@ from sklearn.linear_model import LogisticRegression
 from sklearn.svm import SVC
 from sklearn.tree import DecisionTreeClassifier
 from sklearn.ensemble import RandomForestClassifier
+from sklearn.preprocessing import StandardScaler
+from sklearn.pipeline import Pipeline
 
 from skopt.space import Real, Categorical, Integer
 from skopt import BayesSearchCV
+
+# only uncomment whem comfortable with the warnings
+import warnings
+warnings.filterwarnings("ignore")
 
 def load_pickle(name):
     return pd.read_pickle(f'../data/{name}.pkl')
@@ -55,7 +61,14 @@ def cv_models(X_train, y_train):
     for model_info, params in zip(models, param_choices):
         name, model = model_info
         grid = BayesSearchCV(model(), params, scoring='f1', n_iter=20)
-        grid.fit(X_train, y_train)
+
+        if name == 'logistic':
+            ssX = StandardScaler()
+            X_train_scaled = ssX.fit_transform(X_train)
+            grid.fit(X_train_scaled, y_train)
+        else:
+            grid.fit(X_train, y_train)
+
         # s = f"{name}: best score: {grid.best_score_}"
         # print(s)
         grids[name] = grid
