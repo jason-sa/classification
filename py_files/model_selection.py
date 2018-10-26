@@ -45,14 +45,20 @@ def create_Xy(df):
 
     X_res, y_res = sm.fit_sample(X_train, y_train)
 
+    X_res = pd.DataFrame(X_res)
+    y_res = pd.DataFrame(y_res)
+
+    X_res.columns = X_train.columns
+    y_res.name = y_train.name
+
     # print(f'After re-sample: {Counter(y_res)}')
 
     return X, y, X_res, X_test, y_res, y_test
 
 def cv_models(X_train, y_train):
-    models = [('logistic', LogisticRegression),
-            ('gb', GradientBoostingClassifier), # need to set a random state for consistency
-            ('forest', RandomForestClassifier)#,
+    models = [('Logistic', LogisticRegression),
+            ('Gradient Boost', GradientBoostingClassifier), # need to set a random state for consistency
+            ('Random Forest', RandomForestClassifier)#,
             # ('Gaussian NB', GaussianNB)
             ] # should add naive bayes
 
@@ -84,7 +90,7 @@ def cv_models(X_train, y_train):
     grids = {}
     for model_info, params in zip(models, param_choices):
         name, model = model_info
-        grid = BayesSearchCV(model(), params, scoring='f1', n_iter=20, cv=skf)
+        grid = BayesSearchCV(model(), params, scoring='roc_auc', n_iter=20, cv=skf) # should consider AUC as F1 depends on cut-off
 
         if name == 'logistic':
             ssX = StandardScaler()
@@ -93,7 +99,7 @@ def cv_models(X_train, y_train):
         else:
             grid.fit(X_train, y_train)
 
-        s = f"{name}: best score: {grid.best_score_}"
+        s = f"{name}: best AUC: {grid.best_score_}"
         print(s)
         grids[name] = grid
     
