@@ -111,6 +111,8 @@ def load():
 
         events_trimmed = add_item_property(events_trimmed, item_p, 'categoryid')
         events_trimmed = add_item_property(events_trimmed, item_p, 'available')
+        events_trimmed = add_item_property(events_trimmed, item_p, '790')
+        events_trimmed = events_trimmed.rename(columns = {'790':'price'})
 
         events_trimmed['available'] = events_trimmed['available'].astype(float)
         
@@ -136,8 +138,7 @@ def create_observations(df, seq):
 if __name__ == '__main__':
         events_trimmed = load()
         observations, prior_observations = create_observations(events_trimmed, 2)
-        # print(events_trimmed[events_trimmed.visitorid == 152963])
-        # print(observations)
+        print(events_trimmed.head())
         utils.write_to_pickle(events_trimmed,'events_trimmed')
         utils.write_to_pickle(observations, 'observations')
         utils.write_to_pickle(prior_observations, 'prior_observations')
