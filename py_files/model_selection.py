@@ -6,6 +6,7 @@ Date: 10/24/2018
 '''
 import pandas as pd 
 import numpy as np
+import pickle
 
 import utils
 
@@ -30,8 +31,8 @@ from imblearn.over_sampling import SMOTE
 
 from collections import Counter
 # only uncomment whem comfortable with the warnings
-import warnings
-warnings.filterwarnings("ignore")
+# import warnings
+# warnings.filterwarnings("ignore")
 
 def create_Xy(df):
     y = df.buy_event
@@ -43,7 +44,7 @@ def create_Xy(df):
 
     sm = SMOTE(random_state=1234)
 
-    X_res, y_res = sm.fit_sample(X_train, y_train)
+    X_res, y_res = sm.fit_sample(X_train, np.ravel(y_train))
 
     X_res = pd.DataFrame(X_res)
     y_res = pd.DataFrame(y_res)
@@ -56,17 +57,18 @@ def create_Xy(df):
     return X, y, X_res, X_test, y_res, y_test
 
 def cv_models(X_train, y_train):
-    models = [('Logistic', LogisticRegression),
+    models = [
+        # ('Logistic', LogisticRegression),
             ('Gradient Boost', GradientBoostingClassifier), # need to set a random state for consistency
             ('Random Forest', RandomForestClassifier)#,
             # ('Gaussian NB', GaussianNB)
             ] # should add naive bayes
 
     param_choices = [
-        {
-            'C': Real(1e-3, 1e6),
-            'penalty': Categorical(['l1', 'l2'])
-        },
+        # {
+        #     'C': Real(1e-3, 1e6),
+        #     'penalty': Categorical(['l1', 'l2'])
+        # },
         {
             'loss': Categorical(['deviance', 'exponential']),
             'learning_rate': Real(1e-2, 1),
@@ -97,10 +99,10 @@ def cv_models(X_train, y_train):
             X_train_scaled = ssX.fit_transform(X_train)
             grid.fit(X_train_scaled, y_train)
         else:
-            grid.fit(X_train, y_train)
+            grid.fit(X_train, np.ravel(y_train))
 
-        s = f"{name}: best AUC: {grid.best_score_}"
-        print(s)
+        # s = f"{name}: best AUC: {grid.best_score_}"
+        # print(s)
         grids[name] = grid
     
     return grids
@@ -118,6 +120,23 @@ def run_models():
 
 if __name__ == '__main__':
     results = run_models()
+    # print(results.shape)
+    features = ['view_count', 'session_length', 'item_views', 'add_to_cart_count',
+       'transaction_count', 'avg_avail']
+
+    for k, v in results.items():
+        print(f'{k} Summary')
+        print()
+        print(f'Best out-of-sample AUC score: {v.best_score_}')
+        print()
+        print(f'Feature Importance:')
+        for f, i in zip(features, v.best_estimator_.feature_importances_):
+            print(f'{f}: \t {i:.2%}')
+        print()
+        print('----------------------------')
+        pickle.dump( v.best_estimator_, open( f"../data/best_{k}_model.pkl", "wb" ) )
+
+
     
     ### need to pickle the best model
 
