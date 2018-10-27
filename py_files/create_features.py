@@ -57,9 +57,15 @@ def calc_avg_avail_views(prior_df, events, c_name):
 
     return merge_df
 
+def calc_avg_price(prior_df, events, c_name):
+    merge_df = pd.merge(prior_df, events, on='session_id')
+    merge_df = merge_df.groupby(['visitor_id', 'itemid'])['price'].mean().reset_index()
+    merge_df = merge_df.rename(columns={'price':c_name})
 
-def add_feature(obs, feature, c_name, na_val):
-    obs = pd.merge(obs, feature, how='left', on='visitor_id')
+    return merge_df
+
+def add_feature(obs, feature, c_name, na_val, on_cols = ['visitor_id']):
+    obs = pd.merge(obs, feature, how='left', on=on_cols)
     obs.loc[:, c_name] = obs.loc[:, c_name].fillna(na_val)
 
     return obs
@@ -76,6 +82,7 @@ def gen_features():
     addtocart_counts = calc_add_counts(prior_df, events, 'add_to_cart_count')
     transaction_counts = calc_transaction_counts(prior_df, events, 'transaction_count')
     average_item_avail = calc_avg_avail_views(prior_df, events, 'avg_avail')
+    # item_price = calc_avg_price(prior_df, events, 'avg_price')
 
     # add features to observations (turn this into a loop with **kwargs if time permits)
     # features = {}
@@ -85,6 +92,7 @@ def gen_features():
     observations = add_feature(observations, addtocart_counts, 'add_to_cart_count', -1)
     observations = add_feature(observations, transaction_counts, 'transaction_count', -1)
     observations = add_feature(observations, average_item_avail, 'avg_avail', -1)
+    # observations = add_feature(observations, item_price, 'avg_price', -1, on_cols=['visitor_id', 'itemid'])
 
     # number of different categories viewed
     # availability of the items
