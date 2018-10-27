@@ -12,7 +12,7 @@ import utils
 
 pd.set_option('mode.chained_assignment',None)
 
-DATE_FILTER = datetime(2015, 9, 1)
+DATE_FILTER = datetime(2014, 9, 1)
 EVENTS_FILE = '../data/events.csv'
 ITEM_PROP1 = '../data/item_properties_part1.csv'
 ITEM_PROP2 = '../data/item_properties_part2.csv'
@@ -112,10 +112,13 @@ def load():
         events_trimmed = add_item_property(events_trimmed, item_p, 'categoryid')
         events_trimmed = add_item_property(events_trimmed, item_p, 'available')
         events_trimmed = add_item_property(events_trimmed, item_p, '790')
-        events_trimmed = events_trimmed.rename(columns = {'790':'price'})
 
         events_trimmed['available'] = events_trimmed['available'].astype(float)
-        
+
+        events_trimmed = events_trimmed.rename(columns = {'790':'price'}) # need to strip n and convert to float
+        events_trimmed['price'] = (events_trimmed['price']
+                                        .str.replace('n','')
+                                        .astype(float))
         return events_trimmed
 
 def create_observations(df, seq):
