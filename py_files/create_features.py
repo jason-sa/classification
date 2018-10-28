@@ -19,7 +19,7 @@ def calc_view_counts(prior_df, events, c_name):
 
 def calc_session_length(prior_df, events, c_name):
     merge_df = pd.merge(prior_df, events, on='session_id')
-    merge_df = merge_df.groupby(['visitor_id'])['minutes_since_prev_event'].count().reset_index()
+    merge_df = merge_df.groupby(['visitor_id'])['minutes_since_prev_event'].sum().reset_index()
     merge_df = merge_df.rename(columns={'minutes_since_prev_event':c_name})
 
     return merge_df
@@ -66,15 +66,14 @@ def calc_avg_price(prior_df, events, c_name):
 
 def add_feature(obs, feature, c_name, na_val, on_cols = ['visitor_id']):
     obs = pd.merge(obs, feature, how='left', on=on_cols)
-    obs.loc[:, c_name] = obs.loc[:, c_name].fillna(na_val)
+    if na_val is not None:
+        obs.loc[:, c_name] = obs.loc[:, c_name].fillna(na_val)
+    else:
+        obs.loc[:, c_name] = obs.loc[:, c_name].dropna()
 
     return obs
 
-def gen_features():
-    prior_df = utils.load_pickle('prior_observations')
-    events = utils.load_pickle('events_trimmed')
-    observations = utils.load_pickle('observations')
-
+def gen_features(events, prior_df, observations):
     # calculate features
     view_counts = calc_view_counts(prior_df, events, 'view_count')
     session_length = calc_session_length(prior_df, events, 'session_length')
@@ -86,22 +85,27 @@ def gen_features():
 
     # add features to observations (turn this into a loop with **kwargs if time permits)
     # features = {}
-    observations = add_feature(observations, view_counts, 'view_count', -1)
+    observations = add_feature(observations, view_counts, 'view_count', 0)
     observations = add_feature(observations, session_length, 'session_length', -1)
-    observations = add_feature(observations, item_views, 'item_views',-1)
-    observations = add_feature(observations, addtocart_counts, 'add_to_cart_count', -1)
-    observations = add_feature(observations, transaction_counts, 'transaction_count', -1)
-    observations = add_feature(observations, average_item_avail, 'avg_avail', -1)
-    # observations = add_feature(observations, item_price, 'avg_price', -1, on_cols=['visitor_id', 'itemid'])
+    observations = add_feature(observations, item_views, 'item_views',0)
+    observations = add_feature(observations, addtocart_counts, 'add_to_cart_count', 0)
+    observations = add_feature(observations, transaction_counts, 'transaction_count', 0)
+    observations = add_feature(observations, average_item_avail, 'avg_avail', None) # no history of item availabiity, then can't be modeled
 
     # number of different categories viewed
     # availability of the items
     # maybe last category and then figure out how to one-hot encode
+    
+    observations = observations.dropna()
 
     return observations
 
 if __name__ == '__main__':
-    obs = gen_features()
+    prior_df = utils.load_pickle('prior_observations')
+    events = utils.load_pickle('events_trimmed')
+    observations = utils.load_pickle('observations')
+
+    obs = gen_features(events, prior_df, observations)
     obs.head()
     utils.write_to_pickle(obs, 'features')
     print(obs.info())
