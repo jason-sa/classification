@@ -34,15 +34,17 @@ from collections import Counter
 # import warnings
 # warnings.filterwarnings("ignore")
 
+RANDOM_STATE = 1234
+
 def create_Xy(df):
     y = df.buy_event
     X = df.iloc[:,4:]
-    X_train, X_test, y_train, y_test = train_test_split(X, y, random_state = 1234)
+    X_train, X_test, y_train, y_test = train_test_split(X, y, random_state = RANDOM_STATE, stratify=y)
 
     # up-sample with SMOTE
     # print(f'Prior to re-sample: {Counter(y_train)}')
 
-    sm = SMOTE(random_state=1234)
+    sm = SMOTE(random_state=RANDOM_STATE)
 
     X_res, y_res = sm.fit_sample(X_train, np.ravel(y_train))
 
@@ -56,28 +58,29 @@ def create_Xy(df):
 
     return X, y, X_res, X_test, y_res, y_test
 
-def cv_models(X_train, y_train):
+def cv_models(X_train, y_train, n_iters=10):
     models = [
-        # ('Logistic', LogisticRegression),
-            ('Gradient Boost', GradientBoostingClassifier), # need to set a random state for consistency
+        ('Logistic', LogisticRegression),
+            ('Gradient Boost', GradientBoostingClassifier), 
             ('Random Forest', RandomForestClassifier)#,
             # ('Gaussian NB', GaussianNB)
             ] # should add naive bayes
 
     param_choices = [
-        # {
-        #     'C': Real(1e-3, 1e6),
-        #     'penalty': Categorical(['l1', 'l2'])
-        # },
+        {
+            'C': Real(1e-3, 1e6),
+            'penalty': Categorical(['l1', 'l2'])
+        },
         {
             'loss': Categorical(['deviance', 'exponential']),
             'learning_rate': Real(1e-2, 1),
             'n_estimators': Integer(100, 500),
-            'random_state': [1234]
+            'random_state': [RANDOM_STATE]
         },
         {
-            'n_estimators': Integer(50,200),
-            'max_depth': Integer(1, 5)
+            'n_estimators': Integer(100,500),
+            'max_depth': Integer(1, 5),
+            'random_state': [RANDOM_STATE]
             # ,
             # 'min_samples_leaf': Integer(3, 10)
         }
@@ -87,12 +90,16 @@ def cv_models(X_train, y_train):
         # }
     ]
 
-    skf = StratifiedKFold(n_splits=10, random_state=1234)
+    skf = StratifiedKFold(n_splits=10, random_state=RANDOM_STATE)
 
     grids = {}
     for model_info, params in zip(models, param_choices):
         name, model = model_info
-        grid = BayesSearchCV(model(), params, scoring='roc_auc', n_iter=20, cv=skf) # should consider AUC as F1 depends on cut-off
+
+        print(f'Fitting {name}')
+        print()
+
+        grid = BayesSearchCV(model(), params, scoring='roc_auc', n_iter=n_iters, cv=skf) # should consider AUC as F1 depends on cut-off
 
         if name == 'logistic':
             ssX = StandardScaler()
