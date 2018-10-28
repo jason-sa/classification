@@ -60,17 +60,17 @@ def create_Xy(df):
 
 def cv_models(X_train, y_train, n_iters=10):
     models = [
-        ('Logistic', LogisticRegression),
+        # ('Logistic', LogisticRegression),
             ('Gradient Boost', GradientBoostingClassifier), 
             ('Random Forest', RandomForestClassifier)#,
             # ('Gaussian NB', GaussianNB)
             ] # should add naive bayes
 
     param_choices = [
-        {
-            'C': Real(1e-3, 1e6),
-            'penalty': Categorical(['l1', 'l2'])
-        },
+        # {
+        #     'C': Real(1e-3, 1e6),
+        #     'penalty': Categorical(['l1', 'l2'])
+        # },
         {
             'loss': Categorical(['deviance', 'exponential']),
             'learning_rate': Real(1e-2, 1),
