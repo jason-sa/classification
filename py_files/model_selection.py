@@ -99,7 +99,13 @@ def cv_models(X_train, y_train, n_iters=10):
         print(f'Fitting {name}')
         print()
 
-        grid = BayesSearchCV(model(), params, scoring='roc_auc', n_iter=n_iters, cv=skf) # should consider AUC as F1 depends on cut-off
+        grid = BayesSearchCV(
+                            model(), 
+                            params, 
+                            scoring='roc_auc', 
+                            n_iter=n_iters, 
+                            cv=skf,
+                            n_jobs=10) 
 
         if name == 'logistic':
             ssX = StandardScaler()
