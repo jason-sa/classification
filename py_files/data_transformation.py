@@ -83,8 +83,9 @@ def load():
         # reduce data set size for MVP
         events_trimmed = events[events.local_date_time >= DATE_FILTER]
 
-        print(f'Total number of trimmed events: {events_trimmed.shape[0]:,}')
-        print()
+        if events.shape[0] != events_trimmed.shape[0]:
+                print(f'Total number of trimmed events: {events_trimmed.shape[0]:,}')
+                print()
 
         # calcualte the time diff within each session
         events_trimmed.sort_values(['visitorid', 'local_date_time'], inplace = True)
@@ -108,21 +109,26 @@ def load():
         events_trimmed['seq'] = (events_trimmed
                                         .groupby('visitorid')['seq']
                                         .rank(method='dense'))
+        
+        print('Session calcualted and sequenced.')
+        print()
 
         events_trimmed = add_item_property(events_trimmed, item_p, 'categoryid')
         events_trimmed = add_item_property(events_trimmed, item_p, 'available')
-        events_trimmed = add_item_property(events_trimmed, item_p, '790')
+        # events_trimmed = add_item_property(events_trimmed, item_p, '790')
 
+        print('Added category and item availability property.')
         events_trimmed['available'] = events_trimmed['available'].astype(float)
 
-        events_trimmed = events_trimmed.rename(columns = {'790':'price'}) # need to strip n and convert to float
-        events_trimmed['price'] = (events_trimmed['price']
-                                        .str.replace('n','')
-                                        .astype(float))
+        # events_trimmed = events_trimmed.rename(columns = {'790':'price'}) # need to strip n and convert to float
+        # events_trimmed['price'] = (events_trimmed['price']
+        #                                 .str.replace('n','')
+        #                                 .astype(float))
         return events_trimmed
 
 def create_observations(df, seq):
-        prior_observations = df[df.seq <= seq] # could get session != seq. i think could be OK or drop na in the feature creation
+        visitors = df[df.seq == seq].visitorid.unique()
+        prior_observations = df[(df.visitorid.isin(visitors)) & (df.seq <= seq)] 
         prior_observations['buy_event'] = 0
         prior_observations.loc[prior_observations.event == 'transaction','buy_event'] = 1
         prior_observations = prior_observations.groupby(['session_id','seq'])['buy_event'].max().reset_index()
