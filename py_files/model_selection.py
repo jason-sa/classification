@@ -58,19 +58,10 @@ def create_Xy(df):
 
     return X, y, X_res, X_test, y_res, y_test
 
-def cv_models(X_train, y_train, n_iters=10):
-    models = [
-        # ('Logistic', LogisticRegression),
+def cv_models(X_train, y_train, n_iters=10, models = [
             ('Gradient Boost', GradientBoostingClassifier), 
-            ('Random Forest', RandomForestClassifier)#,
-            # ('Gaussian NB', GaussianNB)
-            ] # should add naive bayes
-
-    param_choices = [
-        # {
-        #     'C': Real(1e-3, 1e6),
-        #     'penalty': Categorical(['l1', 'l2'])
-        # },
+            ('Random Forest', RandomForestClassifier)
+            ], param_choices = [
         {
             'loss': Categorical(['deviance', 'exponential']),
             'learning_rate': Real(1e-2, 1),
@@ -81,14 +72,8 @@ def cv_models(X_train, y_train, n_iters=10):
             'n_estimators': Integer(100,500),
             'max_depth': Integer(1, 5),
             'random_state': [RANDOM_STATE]
-            # ,
-            # 'min_samples_leaf': Integer(3, 10)
         }
-        # ,
-        # {
-
-        # }
-    ]
+    ]):
 
     skf = StratifiedKFold(n_splits=10, random_state=RANDOM_STATE)
 
