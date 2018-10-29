@@ -28,6 +28,7 @@ from skopt.space import Real, Categorical, Integer
 from skopt import BayesSearchCV
 
 from imblearn.over_sampling import SMOTE
+from imblearn.combine import SMOTETomek, SMOTEENN
 
 from collections import Counter
 # only uncomment whem comfortable with the warnings
@@ -56,7 +57,51 @@ def create_Xy(df):
 
     # print(f'After re-sample: {Counter(y_res)}')
 
-    return X, y, X_res, X_test, y_res, y_test
+    return X, y, X_res, X_test, y_res, y_test, X_train, y_train
+
+def create_Xy_SMOTETomek(df):
+    y = df.buy_event
+    X = df.iloc[:,4:]
+    X_train, X_test, y_train, y_test = train_test_split(X, y, random_state = RANDOM_STATE, stratify=y)
+
+    # up-sample with SMOTE
+    # print(f'Prior to re-sample: {Counter(y_train)}')
+
+    sm = SMOTETomek(random_state=RANDOM_STATE)
+
+    X_res, y_res = sm.fit_sample(X_train, np.ravel(y_train))
+
+    X_res = pd.DataFrame(X_res)
+    y_res = pd.DataFrame(y_res)
+
+    X_res.columns = X_train.columns
+    y_res.name = y_train.name
+
+    # print(f'After re-sample: {Counter(y_res)}')
+
+    return X, y, X_res, X_test, y_res, y_test, X_train, y_train
+
+def create_Xy_SMOTEENN(df):
+    y = df.buy_event
+    X = df.iloc[:,4:]
+    X_train, X_test, y_train, y_test = train_test_split(X, y, random_state = RANDOM_STATE, stratify=y)
+
+    # up-sample with SMOTE
+    # print(f'Prior to re-sample: {Counter(y_train)}')
+
+    sm = SMOTEENN(random_state=RANDOM_STATE)
+
+    X_res, y_res = sm.fit_sample(X_train, np.ravel(y_train))
+
+    X_res = pd.DataFrame(X_res)
+    y_res = pd.DataFrame(y_res)
+
+    X_res.columns = X_train.columns
+    y_res.name = y_train.name
+
+    # print(f'After re-sample: {Counter(y_res)}')
+
+    return X, y, X_res, X_test, y_res, y_test, X_train, y_train
 
 def cv_models(X_train, y_train, n_iters=10, models = [
             ('Gradient Boost', GradientBoostingClassifier), 
@@ -75,7 +120,7 @@ def cv_models(X_train, y_train, n_iters=10, models = [
         }
     ]):
 
-    skf = StratifiedKFold(n_splits=10, random_state=RANDOM_STATE)
+    skf = StratifiedKFold(n_splits=5, random_state=RANDOM_STATE)
 
     grids = {}
     for model_info, params in zip(models, param_choices):
@@ -90,7 +135,7 @@ def cv_models(X_train, y_train, n_iters=10, models = [
                             scoring='roc_auc', 
                             n_iter=n_iters, 
                             cv=skf,
-                            n_jobs=10) 
+                            n_jobs=5) 
 
         if name == 'logistic':
             ssX = StandardScaler()
