@@ -12,7 +12,7 @@ import utils
 
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import f1_score
-from sklearn.model_selection import StratifiedKFold
+from sklearn.model_selection import StratifiedKFold, KFold
 
 # from sklearn.neighbors import KNeighborsClassifier as KNN
 from sklearn.linear_model import LogisticRegression
@@ -37,7 +37,7 @@ from collections import Counter
 
 RANDOM_STATE = 1234
 
-def create_Xy(df):
+def create_Xy(df, sample_model=None):
     y = df.buy_event
     X = df.iloc[:,4:]
     X_train, X_test, y_train, y_test = train_test_split(X, y, random_state = RANDOM_STATE, stratify=y)
@@ -45,15 +45,18 @@ def create_Xy(df):
     # up-sample with SMOTE
     # print(f'Prior to re-sample: {Counter(y_train)}')
 
-    sm = SMOTE(random_state=RANDOM_STATE)
+    X_res = None
+    y_res = None
+    if sample_model is not None:
+        # sm = SMOTE(random_state=RANDOM_STATE)
 
-    X_res, y_res = sm.fit_sample(X_train, np.ravel(y_train))
+        X_res, y_res = sample_model.fit_sample(X_train, np.ravel(y_train))
 
-    X_res = pd.DataFrame(X_res)
-    y_res = pd.DataFrame(y_res)
+        X_res = pd.DataFrame(X_res)
+        y_res = pd.DataFrame(y_res)
 
-    X_res.columns = X_train.columns
-    y_res.name = y_train.name
+        X_res.columns = X_train.columns
+        y_res.name = y_train.name
 
     # print(f'After re-sample: {Counter(y_res)}')
 
@@ -103,7 +106,7 @@ def create_Xy_SMOTEENN(df):
 
     return X, y, X_res, X_test, y_res, y_test, X_train, y_train
 
-def cv_models(X_train, y_train, n_iters=10, models = [
+def cv_models(X_train, y_train, n_iters=10, scoring='roc_auc', models = [
             ('Gradient Boost', GradientBoostingClassifier), 
             ('Random Forest', RandomForestClassifier)
             ], param_choices = [
@@ -120,7 +123,7 @@ def cv_models(X_train, y_train, n_iters=10, models = [
         }
     ]):
 
-    skf = StratifiedKFold(n_splits=5, random_state=RANDOM_STATE)
+    skf = KFold(n_splits=10, random_state=RANDOM_STATE, shuffle=True)
 
     grids = {}
     for model_info, params in zip(models, param_choices):
@@ -132,7 +135,7 @@ def cv_models(X_train, y_train, n_iters=10, models = [
         grid = BayesSearchCV(
                             model(), 
                             params, 
-                            scoring='roc_auc', 
+                            scoring=scoring, 
                             n_iter=n_iters, 
                             cv=skf,
                             n_jobs=5) 
