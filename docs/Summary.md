@@ -90,3 +90,4 @@ I utilized the following tools for my analysis.
 
 ## **What I would consider differently?**
 
+I underestimate the amount of time needed to transform the raw data into a data set I could then train my models. I would have liked to spend more time understanding the consequence of applying different sampling techniques as this appears to have had an impact on the overall quality of the model. I am also concerned the model I trained was overfit based on the test results, but did not have time to troubleshoot this further. For my next project, I would like to spend at least 2 days training models, and 2 days building presentation. 
