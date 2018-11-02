@@ -48,7 +48,14 @@ def calc_session_id(df, mask):
     return df
 
 def add_item_property(events_df, property_df, p_name):
-    
+    ''' Adds item properties to the events data frame
+
+    events_df: events data frame
+    property_df: property data frame
+    p_name: property value to add to the events data frame
+
+    returns: pd.DataFrame (events + p_name)
+    '''
     events_df.sort_values('local_date_time', inplace=True)
     property_df.sort_values('local_date_time', inplace=True)
 
@@ -66,6 +73,10 @@ def add_item_property(events_df, property_df, p_name):
     return events_df
 
 def load():
+        ''' Loads all raw data from RetailRocket, calculates session, and adds item properties
+
+        returns: pd.DataFrame (events)
+        '''
         # get data
         events = pd.read_csv(EVENTS_FILE)
         item_p1 = pd.read_csv(ITEM_PROP1)
@@ -127,6 +138,13 @@ def load():
         return events_trimmed
 
 def create_observations(df, seq):
+        ''' Creates the observations and prior observations data frame
+
+        df: events data frame
+        seq: filter of how many sessions to filter for the analysis. seq = 2, means seq 1 is prior and seq 2 is observations
+
+        returns (pd.DataFrame, pd.DataFrame) (observations, prior)
+        '''
         visitors = df[df.seq == seq].visitorid.unique()
         prior_observations = df[(df.visitorid.isin(visitors)) & (df.seq <= seq)] 
         prior_observations['buy_event'] = 0
@@ -151,103 +169,3 @@ if __name__ == '__main__':
         utils.write_to_pickle(events_trimmed,'events_trimmed')
         utils.write_to_pickle(observations, 'observations')
         utils.write_to_pickle(prior_observations, 'prior_observations')
-
-        '''
-        # first calcualte sessions for each buy transaction
-        events_trimmed.sort_values(['visitorid','local_date_time'], inplace=True)
-        events_trimmed['prev_event'] = events_trimmed.groupby('visitorid').event.shift(1)
-        sub = (events_trimmed.event == 'view') & (events_trimmed.prev_event == 'transaction')
-        events_trimmed = calc_session_id(events_trimmed, sub)
-
-        print(f'Total number of sessions dividing on transaction: {len(events_trimmed.session_id.unique()):,}')
-        print()
-
-        # calcualte the time diff within each session
-        events_trimmed.sort_values(['session_id', 'local_date_time'], inplace = True)
-
-        # grouby + diff is slow may need to fix
-        events_trimmed['time_diff'] = (events_trimmed
-                                .groupby('session_id')['timestamp']
-                                .diff(1)
-                                .fillna(0) 
-                                / 1000)
-
-        events_trimmed['page_length'] = events_trimmed.groupby('visitorid').time_diff.shift(-1)
-
-        # re-calaculate sessions with a new session starting whenever a buy occurs or if a view lasts longer than 3.5 minutes
-        sub = (((events_trimmed.event == 'view') 
-        & (events_trimmed.prev_event == 'transaction'))
-        | ((events_trimmed.event.isin(['view','addtocart']) )
-                & (events_trimmed.time_diff > SESSION_TIME_LIMIT)))
-
-        events_trimmed = calc_session_id(events_trimmed, sub)
-
-        print(f'Total number of sessions adding a time limit: {len(events_trimmed.session_id.unique()):,}')
-        print()
-
-        # trim down to addtocart events only
-        events_addtocart = events_trimmed[events_trimmed.event == 'addtocart']
-
-        order_history = events_addtocart.loc[:,['session_id', 'visitorid','itemid', 'local_date_time']]
-
-        # visitors with multiple sessions only '_1' is alwasy the first session for each visitor
-        visitors = order_history[~order_history.session_id.str.endswith('_1')].visitorid.unique()
-        order_history = order_history[order_history.visitorid.isin(visitors)]
-        order_history = order_history.groupby(['session_id','visitorid','itemid'])['local_date_time'].max().reset_index()
-
-        # remove dup items which were added twice in the event log
-        order_history = order_history.groupby(['session_id','visitorid','itemid'])['local_date_time'].max().reset_index()
-
-        unique_visitor_item = order_history.loc[:,['visitorid', 'itemid']].drop_duplicates()
-        total_order_history = unique_visitor_item.merge(order_history, how='outer', on='visitorid')
-
-        # Calaculate what was in the cart over time based on what the visitor has ever purchased
-        total_order_history['in_cart'] = 0
-
-        mask = (total_order_history.itemid_y == total_order_history.itemid_x)
-        total_order_history.loc[mask, 'in_cart'] = 1
-
-        # Clean-up columns
-        total_order_history.drop(columns='itemid_y', inplace=True)
-        total_order_history.rename(columns={'itemid_x':'itemid'}, inplace=True)
-
-        # remove dups where the items are not in the cart (in_cart = 0)
-        total_order_history['item_session'] = total_order_history.itemid.astype(str) + '_' + total_order_history.session_id
-        total_order_history[total_order_history.in_cart == 1].item_session.unique()
-
-        mask = ((total_order_history.item_session
-                .isin(total_order_history[total_order_history.in_cart == 1]
-                        .item_session
-                        .unique()
-                        ))
-        & (total_order_history.in_cart == 0))
-        total_order_history = total_order_history[~mask]
-        total_order_history = (total_order_history
-                        .groupby(['visitorid','itemid','session_id','in_cart','item_session'])['local_date_time']
-                        .max()
-                        .reset_index())
-
-        # calacualte order sequence
-        total_order_history['seq'] = (total_order_history.session_id
-                                                .str.split('_')
-                                                .apply(lambda x: x[1])
-                                                .astype(int))
-
-        total_order_history['order_seq'] = (total_order_history
-                                        .groupby('visitorid')['seq']
-                                        .rank(method='dense'))
-
-        total_order_history.drop(columns='seq',inplace=True)
-
-        # split last_order and all other orders
-        last_order = total_order_history.groupby('visitorid')['session_id'].last()
-
-        observations = total_order_history[total_order_history.session_id.isin(last_order)]
-        prior_observations = total_order_history.drop(observations.index)
-
-        # save data
-        events_trimmed.to_pickle('../data/events_trimmed.pkl')
-        total_order_history.to_pickle('../data/total_order_history.pkl')
-        observations.to_pickle('../data/observations.pkl')
-        prior_observations.to_pickle('../data/prior_observations.pkl')
-        '''
