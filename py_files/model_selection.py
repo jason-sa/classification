@@ -203,10 +203,3 @@ if __name__ == '__main__':
         print()
         print('----------------------------')
         pickle.dump( v.best_estimator_, open( f"../data/best_{k}_model.pkl", "wb" ) )
-
-
-    
-    ### need to pickle the best model
-
-    # for k, v in results.items():
-    #     print(f'{k} best F1 score: {v.best_score_}')
