@@ -38,6 +38,13 @@ from collections import Counter
 RANDOM_STATE = 1234
 
 def create_Xy(df, sample_model=None):
+    ''' Performs train test split and applies any sampling.
+    
+    df: observations data frame to split into X, y
+    sample_model: sampling model to apply to the train data set
+
+    returns: X, y, X_train, X_test, y_train, y_test, X_train_orig (no sampling), y_train (no sampling)
+    '''
     y = df.buy_event
     X = df.iloc[:,4:]
     X_train, X_test, y_train, y_test = train_test_split(X, y, random_state = RANDOM_STATE, stratify=y)
@@ -122,6 +129,17 @@ def cv_models(X_train, y_train, n_iters=10, scoring='roc_auc', models = [
             'random_state': [RANDOM_STATE]
         }
     ]):
+    ''' Trains models utilizing BayesSearchCV with 10 fold CV.
+
+    X_train: training feature space
+    y_train: training response space
+    n_iters: number of iterations for BayesSearch
+    scoring: the socring method to be utilized
+    models: models to be trained
+    param_choices: parameters to be tuned for each model
+
+    returns dict of BayesSearch CV results for each model
+    '''
 
     skf = KFold(n_splits=10, random_state=RANDOM_STATE, shuffle=True)
 
@@ -154,10 +172,14 @@ def cv_models(X_train, y_train, n_iters=10, scoring='roc_auc', models = [
     return grids
 
 def run_models():
+    ''' Runs train/test split and models with defaults
+
+    returns dict BayesSearchCV results 
+    '''
     obs = utils.load_pickle('features')
 
     # build X,y and perform train test split
-    X, y, X_train, X_test, y_train, t_test = create_Xy(obs)
+    X, y, X_train, X_test, y_train, t_test, X_train_orig, y_train_orig = create_Xy(obs)
 
     # run the models
     results = cv_models(X_train, y_train)
