@@ -1,5 +1,7 @@
 # custom
-data/*
+data/*.pkl
+data/*.csv
+data/session_dumps/*
 .vscode
 
 # Byte-compiled / optimized / DLL files
