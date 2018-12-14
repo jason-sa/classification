@@ -21,7 +21,7 @@ def main(input_filepath, output_filepath):
     events_file_path = os.path.join(input_filepath, 'events.csv')
     item_prop_1_file_path = os.path.join(input_filepath, 'item_properties_part1.csv')
     item_prop_2_file_path = os.path.join(input_filepath, 'item_properties_part2.csv')
-    date_filter = datetime(2014, 9, 1) # filter the anlaysis to start on 9/1
+    date_filter = datetime(2014, 9, 1)# filter the anlaysis to start on 9/1
     session_time_limit = 30 # new session will start after 30 mins of inactivity
 
     events_trimmed = load(  events_file_path,

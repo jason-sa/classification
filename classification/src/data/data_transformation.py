@@ -86,6 +86,7 @@ def load(events_file, item_prop1, item_prop2, date_filter, session_limit):
         item_p1 = pd.read_csv(item_prop1)
         item_p2 = pd.read_csv(item_prop2)
 
+        logger.info('Converting timestamp to local datetime.')
         events['local_date_time'] = events.timestamp.apply(convert_to_local)
         item_p1['local_date_time'] = item_p1.timestamp.apply(convert_to_local)
         item_p2['local_date_time'] = item_p2.timestamp.apply(convert_to_local)
@@ -103,15 +104,16 @@ def load(events_file, item_prop1, item_prop2, date_filter, session_limit):
 
         logger.info(f'Calculating the time between each event')
         # calcualte the time diff within each session
-        events_trimmed.sort_values(['visitorid', 'local_date_time'], inplace = True)
+        events_trimmed = events_trimmed.sort_values(['visitorid', 'local_date_time'])
 
         # grouby + diff is slow may need to fix
-        events_trimmed['minutes_since_prev_event'] = (events_trimmed
+        min_since_prev_event = (events_trimmed
                                 .groupby('visitorid')['timestamp']
                                 .diff(1)
                                 .fillna(0) 
                                 / 1000
                                 / 60)
+        events_trimmed['minutes_since_prev_event'] = min_since_prev_event
 
         logger.info(f'Calculate the sessions')
         mask = (events_trimmed.minutes_since_prev_event > session_limit)
@@ -126,7 +128,7 @@ def load(events_file, item_prop1, item_prop2, date_filter, session_limit):
                                         .groupby('visitorid')['seq']
                                         .rank(method='dense'))
         
-        logger.info(f'Calculating the time between each event')
+        logger.info(f'Adding item category and whether or not the item was available')
 
         events_trimmed = add_item_property(events_trimmed, item_p, 'categoryid')
         events_trimmed = add_item_property(events_trimmed, item_p, 'available')
@@ -148,20 +150,31 @@ def create_observations(df, seq):
 
         returns (pd.DataFrame, pd.DataFrame) (observations, prior)
         '''
-        visitors = df[df.seq == seq].visitorid.unique()
-        prior_observations = df[(df.visitorid.isin(visitors)) & (df.seq <= seq)] 
-        prior_observations['buy_event'] = 0
-        prior_observations.loc[prior_observations.event == 'transaction','buy_event'] = 1
-        prior_observations = prior_observations.groupby(['session_id','seq'])['buy_event'].max().reset_index()
 
-        prior_observations['visitor_id'] = (prior_observations.session_id
+        logger = logging.getLogger(__name__)
+
+        # get those visitors which had at least 'seq' events, e.g. if seq = 2, 
+        # then we do not want the visitor with only seq = 1 events and NOT seq = 2 events
+        visitors = df[df.seq == seq].visitorid.unique()
+
+        logger.info('Creating the prior observations df')
+
+        prior_df = df.loc[ (df.visitorid.isin(visitors)) & (df.seq <= seq), :] 
+        prior_df = prior_df.assign(buy_event=0)
+        prior_df.loc[ (prior_df.event == 'transaction'), ('buy_event') ] = 1
+        
+        logger.info('Grouping by session_id and seq')
+        prior_df_grouped = prior_df.groupby(['session_id','seq'])['buy_event'].max().reset_index()
+
+        logger.info('calculating the visitor_id')
+        prior_df_grouped.loc[:, 'visitor_id'] = (prior_df_grouped.session_id
                                                 .str.split('_')
                                                 .apply(lambda x: x[0])
                                                 .astype(int))
         
-
-        observations = prior_observations[prior_observations.seq == seq]
-        prior_observations = prior_observations[prior_observations.seq < seq]
+        logger.info('Creating the observations and prior_observations df')
+        observations = prior_df_grouped[prior_df_grouped.seq == seq]
+        prior_observations = prior_df_grouped[prior_df_grouped.seq < seq]
 
         return observations, prior_observations
 
