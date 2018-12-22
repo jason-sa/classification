@@ -1,16 +1,13 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-import click
 import logging
 from pathlib import Path
 import os
 from datetime import datetime
 
-from data_transformation import load, create_observations
+from src.data.data_transformation import load, create_observations
 
-# @click.command()
-# @click.argument('input_filepath', type=click.Path(exists=True))
-# @click.argument('output_filepath', type=click.Path())
+
 def main(input_filepath, output_filepath):
     """ Runs data processing scripts to turn raw data from (../raw) into
         cleaned data ready to be analyzed (saved in ../processed).
@@ -19,16 +16,20 @@ def main(input_filepath, output_filepath):
     logger.info('transforming raw event data')
 
     events_file_path = os.path.join(input_filepath, 'events.csv')
-    item_prop_1_file_path = os.path.join(input_filepath, 'item_properties_part1.csv')
-    item_prop_2_file_path = os.path.join(input_filepath, 'item_properties_part2.csv')
-    date_filter = datetime(2014, 9, 1)# filter the anlaysis to start on 9/1
-    session_time_limit = 30 # new session will start after 30 mins of inactivity
+    item_prop_1_file_path = (os.path.join(input_filepath,
+                                          'item_properties_part1.csv'))
+    item_prop_2_file_path = (os.path.join(input_filepath,
+                                          'item_properties_part2.csv'))
+    # filter the anlaysis to start on 9/1
+    date_filter = datetime(2014, 9, 1)
+    # new session will start after 30 mins of inactivity
+    session_time_limit = 30
 
-    events_trimmed = load(  events_file_path,
-                            item_prop_1_file_path,
-                            item_prop_2_file_path,
-                            date_filter,
-                            session_time_limit)
+    events_trimmed = load(events_file_path,
+                          item_prop_1_file_path,
+                          item_prop_2_file_path,
+                          date_filter,
+                          session_time_limit)
 
     logger.info('creating the observation and prior observation data')
     observations, prior_observations = create_observations(events_trimmed, 2)
@@ -43,6 +44,7 @@ def main(input_filepath, output_filepath):
 
     prior_out = os.path.join(output_filepath, 'prior_observations.csv')
     prior_observations.to_csv(prior_out, index=False)
+
 
 if __name__ == '__main__':
     log_fmt = '%(asctime)s - %(name)s - %(levelname)s - %(message)s'

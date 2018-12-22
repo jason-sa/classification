@@ -13,6 +13,7 @@ import os
 from pathlib import Path
 import logging
 
+
 def calc_view_counts(prior_df, events, c_name):
     ''' Counts the number of view events
 
@@ -25,9 +26,10 @@ def calc_view_counts(prior_df, events, c_name):
     merge_df = pd.merge(prior_df, events, on='session_id')
     merge_df = merge_df[merge_df.event == 'view']
     merge_df = merge_df.groupby(['visitor_id'])['event'].count().reset_index()
-    merge_df = merge_df.rename(columns={'event':c_name})
+    merge_df = merge_df.rename(columns={'event': c_name})
 
     return merge_df
+
 
 def calc_session_length(prior_df, events, c_name):
     ''' Calculates the length of the session
@@ -39,10 +41,13 @@ def calc_session_length(prior_df, events, c_name):
     return: pd.DataFrame of prior + c_name
     '''
     merge_df = pd.merge(prior_df, events, on='session_id')
-    merge_df = merge_df.groupby(['visitor_id'])['minutes_since_prev_event'].sum().reset_index()
-    merge_df = merge_df.rename(columns={'minutes_since_prev_event':c_name})
+    merge_df = (merge_df.groupby(['visitor_id'])['minutes_since_prev_event']
+                        .sum()
+                        .reset_index())
+    merge_df = merge_df.rename(columns={'minutes_since_prev_event': c_name})
 
     return merge_df
+
 
 def calc_item_view_counts(prior_df, events, c_name):
     ''' Counts the number of items viewed
@@ -55,10 +60,13 @@ def calc_item_view_counts(prior_df, events, c_name):
     '''
     merge_df = pd.merge(prior_df, events, on='session_id')
     merge_df = merge_df[merge_df.event == 'view']
-    merge_df = merge_df.groupby(['visitor_id'])['itemid'].nunique().reset_index()
-    merge_df = merge_df.rename(columns={'itemid':c_name})
+    merge_df = (merge_df.groupby(['visitor_id'])['itemid']
+                        .nunique()
+                        .reset_index())
+    merge_df = merge_df.rename(columns={'itemid': c_name})
 
     return merge_df
+
 
 def calc_add_counts(prior_df, events, c_name):
     ''' Counts the number of add to cart events
@@ -72,9 +80,10 @@ def calc_add_counts(prior_df, events, c_name):
     merge_df = pd.merge(prior_df, events, on='session_id')
     merge_df = merge_df[merge_df.event == 'addtocart']
     merge_df = merge_df.groupby(['visitor_id'])['event'].count().reset_index()
-    merge_df = merge_df.rename(columns={'event':c_name})
+    merge_df = merge_df.rename(columns={'event': c_name})
 
     return merge_df
+
 
 def calc_transaction_counts(prior_df, events, c_name):
     ''' Counts the number of transaction events
@@ -88,9 +97,10 @@ def calc_transaction_counts(prior_df, events, c_name):
     merge_df = pd.merge(prior_df, events, on='session_id')
     merge_df = merge_df[merge_df.event == 'transaction']
     merge_df = merge_df.groupby(['visitor_id'])['event'].count().reset_index()
-    merge_df = merge_df.rename(columns={'event':c_name})
+    merge_df = merge_df.rename(columns={'event': c_name})
 
     return merge_df
+
 
 def calc_avg_avail_views(prior_df, events, c_name):
     ''' Calculates the average item availability of the session
@@ -103,11 +113,13 @@ def calc_avg_avail_views(prior_df, events, c_name):
     '''
     merge_df = pd.merge(prior_df, events, on='session_id')
     merge_df = merge_df[merge_df.event == 'view']
-    merge_df = merge_df.groupby(['visitor_id'])['available'].agg(['count','sum'])
+    merge_df = (merge_df.groupby(['visitor_id'])['available']
+                        .agg(['count', 'sum']))
     merge_df[c_name] = merge_df['sum'] / merge_df['count']
-    merge_df = merge_df.drop(columns=['count','sum'])
+    merge_df = merge_df.drop(columns=['count', 'sum'])
 
     return merge_df
+
 
 def calc_avg_price(prior_df, events, c_name):
     ''' Calculates the averge price
@@ -119,12 +131,15 @@ def calc_avg_price(prior_df, events, c_name):
     return: pd.DataFrame of prior + c_name
     '''
     merge_df = pd.merge(prior_df, events, on='session_id')
-    merge_df = merge_df.groupby(['visitor_id', 'itemid'])['price'].mean().reset_index()
-    merge_df = merge_df.rename(columns={'price':c_name})
+    merge_df = (merge_df.groupby(['visitor_id', 'itemid'])['price']
+                        .mean()
+                        .reset_index())
+    merge_df = merge_df.rename(columns={'price': c_name})
 
     return merge_df
 
-def add_feature(obs, feature, c_name, na_val, on_cols = ['visitor_id']):
+
+def add_feature(obs, feature, c_name, na_val, on_cols=['visitor_id']):
     ''' Adds the features to the observation data frame
 
     obs: data frame of observations
@@ -143,6 +158,7 @@ def add_feature(obs, feature, c_name, na_val, on_cols = ['visitor_id']):
 
     return obs
 
+
 def gen_features():
     '''
     Main function to generate all features. The data are read from
@@ -159,8 +175,10 @@ def gen_features():
     processed_path = os.path.join(project_dir, 'data', 'processed')
 
     events = pd.read_csv(os.path.join(processed_path, 'events.csv'))
-    prior_df = pd.read_csv(os.path.join(processed_path, 'prior_observations.csv'))
-    observations = pd.read_csv(os.path.join(processed_path, 'observations.csv'))
+    prior_df = (pd.read_csv(
+                os.path.join(processed_path, 'prior_observations.csv')))
+    observations = (pd.read_csv(
+                os.path.join(processed_path, 'observations.csv')))
 
     # calculate features
     logger.info('Calculating view counts.')
@@ -176,20 +194,40 @@ def gen_features():
     addtocart_counts = calc_add_counts(prior_df, events, 'add_to_cart_count')
 
     logger.info('Calculating transaction events.')
-    transaction_counts = calc_transaction_counts(prior_df, events, 'transaction_count')
+    transaction_counts = (calc_transaction_counts(prior_df,
+                                                  events,
+                                                  'transaction_count'))
 
     logger.info('Calculating average availability.')
     average_item_avail = calc_avg_avail_views(prior_df, events, 'avg_avail')
     # item_price = calc_avg_price(prior_df, events, 'avg_price')
 
-    # add features to observations (turn this into a loop with **kwargs if time permits)
+    # add features to observations
     logger.info('Adding features to the observation data.')
-    observations = add_feature(observations, view_counts, 'view_count', 0)
-    observations = add_feature(observations, session_length, 'session_length', -1)
-    observations = add_feature(observations, item_views, 'item_views',0)
-    observations = add_feature(observations, addtocart_counts, 'add_to_cart_count', 0)
-    observations = add_feature(observations, transaction_counts, 'transaction_count', 0)
-    observations = add_feature(observations, average_item_avail, 'avg_avail', None) # no history of item availabiity, then can't be modeled
+    observations = (add_feature(observations,
+                                view_counts,
+                                'view_count',
+                                0))
+    observations = (add_feature(observations,
+                                session_length,
+                                'session_length',
+                                -1))
+    observations = (add_feature(observations,
+                                item_views,
+                                'item_views',
+                                0))
+    observations = (add_feature(observations,
+                                addtocart_counts,
+                                'add_to_cart_count',
+                                0))
+    observations = (add_feature(observations,
+                                transaction_counts,
+                                'transaction_count',
+                                0))
+    observations = (add_feature(observations,
+                                average_item_avail,
+                                'avg_avail',
+                                None))
 
     # number of different categories viewed
     # availability of the items
@@ -197,7 +235,10 @@ def gen_features():
 
     logger.info('Writing observations_features.')
     observations = observations.dropna()
-    observations.to_csv(os.path.join(processed_path, 'observations_features.csv'))
+    (observations.to_csv(
+                    os.path.join(processed_path, 'observations_features.csv'),
+                    index=False))
+
 
 if __name__ == '__main__':
     log_fmt = '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
