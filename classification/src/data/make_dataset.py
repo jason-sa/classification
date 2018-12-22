@@ -51,7 +51,7 @@ if __name__ == '__main__':
     # not used in this stub but often useful for finding various files
     project_dir = Path(__file__).resolve().parents[2]
 
-    # specify the input and output paths    
+    # specify the input and output paths
     input_path = os.path.join(project_dir, 'data', 'raw')
     output_path = os.path.join(project_dir, 'data', 'processed')
 

@@ -44,7 +44,7 @@ def calc_session_id(df, mask):
 
     # make the session id unique
     df.session_id = df.visitorid.astype(str) + '_' + df.session_id.astype(int).astype(str)
-    
+
     return df
 
 def add_item_property(events_df, property_df, p_name):
@@ -59,7 +59,7 @@ def add_item_property(events_df, property_df, p_name):
     events_df.sort_values('local_date_time', inplace=True)
     property_df.sort_values('local_date_time', inplace=True)
 
-    events_df = pd.merge_asof(events_df, property_df[property_df.property == p_name], 
+    events_df = pd.merge_asof(events_df, property_df[property_df.property == p_name],
                                    on='local_date_time',
                                    by='itemid')
 
@@ -69,7 +69,7 @@ def add_item_property(events_df, property_df, p_name):
                                                     })
 
     events_df = events_df.drop(columns=['timestamp_y', 'property'])
-    
+
     return events_df
 
 def load(events_file, item_prop1, item_prop2, date_filter, session_limit):
@@ -92,7 +92,7 @@ def load(events_file, item_prop1, item_prop2, date_filter, session_limit):
         item_p2['local_date_time'] = item_p2.timestamp.apply(convert_to_local)
 
         item_p = pd.concat([item_p1, item_p2], axis=0)
-        
+
         logger.info(f'Total number of events: {events.shape[0]:,}')
 
         # reduce data set size for MVP
@@ -100,7 +100,7 @@ def load(events_file, item_prop1, item_prop2, date_filter, session_limit):
 
         if events.shape[0] != events_trimmed.shape[0]:
                 logger.info(f'Total number of trimmed events: {events_trimmed.shape[0]:,}')
-                
+
 
         logger.info(f'Calculating the time between each event')
         # calcualte the time diff within each session
@@ -110,7 +110,7 @@ def load(events_file, item_prop1, item_prop2, date_filter, session_limit):
         min_since_prev_event = (events_trimmed
                                 .groupby('visitorid')['timestamp']
                                 .diff(1)
-                                .fillna(0) 
+                                .fillna(0)
                                 / 1000
                                 / 60)
         events_trimmed['minutes_since_prev_event'] = min_since_prev_event
@@ -127,7 +127,7 @@ def load(events_file, item_prop1, item_prop2, date_filter, session_limit):
         events_trimmed['seq'] = (events_trimmed
                                         .groupby('visitorid')['seq']
                                         .rank(method='dense'))
-        
+
         logger.info(f'Adding item category and whether or not the item was available')
 
         events_trimmed = add_item_property(events_trimmed, item_p, 'categoryid')
@@ -153,16 +153,16 @@ def create_observations(df, seq):
 
         logger = logging.getLogger(__name__)
 
-        # get those visitors which had at least 'seq' events, e.g. if seq = 2, 
+        # get those visitors which had at least 'seq' events, e.g. if seq = 2,
         # then we do not want the visitor with only seq = 1 events and NOT seq = 2 events
         visitors = df[df.seq == seq].visitorid.unique()
 
         logger.info('Creating the prior observations df')
 
-        prior_df = df.loc[ (df.visitorid.isin(visitors)) & (df.seq <= seq), :] 
+        prior_df = df.loc[ (df.visitorid.isin(visitors)) & (df.seq <= seq), :]
         prior_df = prior_df.assign(buy_event=0)
         prior_df.loc[ (prior_df.event == 'transaction'), ('buy_event') ] = 1
-        
+
         logger.info('Grouping by session_id and seq')
         prior_df_grouped = prior_df.groupby(['session_id','seq'])['buy_event'].max().reset_index()
 
@@ -171,7 +171,7 @@ def create_observations(df, seq):
                                                 .str.split('_')
                                                 .apply(lambda x: x[0])
                                                 .astype(int))
-        
+
         logger.info('Creating the observations and prior_observations df')
         observations = prior_df_grouped[prior_df_grouped.seq == seq]
         prior_observations = prior_df_grouped[prior_df_grouped.seq < seq]
