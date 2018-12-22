@@ -26,8 +26,8 @@ requirements: test_environment
 	$(PYTHON_INTERPRETER) -m pip install -r requirements.txt
 
 ## Make Dataset
-data: requirements
-	$(PYTHON_INTERPRETER) src/data/make_dataset.py
+data: requirements data/processed/observations_features.csv
+	# $(PYTHON_INTERPRETER) src/data/make_dataset.py
 
 ## Delete all compiled Python files
 clean:
@@ -37,22 +37,6 @@ clean:
 ## Lint using flake8
 lint:
 	flake8 src
-
-## Upload Data to S3
-sync_data_to_s3:
-ifeq (default,$(PROFILE))
-	aws s3 sync data/ s3://$(BUCKET)/data/
-else
-	aws s3 sync data/ s3://$(BUCKET)/data/ --profile $(PROFILE)
-endif
-
-## Download Data from S3
-sync_data_from_s3:
-ifeq (default,$(PROFILE))
-	aws s3 sync s3://$(BUCKET)/data/ data/
-else
-	aws s3 sync s3://$(BUCKET)/data/ data/ --profile $(PROFILE)
-endif
 
 ## Set up python interpreter environment
 create_environment:
@@ -79,8 +63,19 @@ test_environment:
 #################################################################################
 # PROJECT RULES                                                                 #
 #################################################################################
+data/raw/ecommerce-dataset.zip:
+	kaggle datasets download -d retailrocket/ecommerce-dataset -p $(PROJECT_DIR)/data/raw/
+	unzip $(PROJECT_DIR)/data/raw/ecommerce-dataset.zip -d $(PROJECT_DIR)/data/raw
+	touch $(PROJECT_DIR)/data/raw/category_tree.csv
+	touch $(PROJECT_DIR)/data/raw/events.csv
+	touch $(PROJECT_DIR)/data/raw/item_properties_part1.csv
+	touch $(PROJECT_DIR)/data/raw/item_properties_part2.csv
 
+data/processed/events.csv data/processed/observations.csv data/processed/prior_observations.csv: data/raw/ecommerce-dataset.zip src/data/data_transformation.py src/data/make_dataset.py
+	$(PYTHON_INTERPRETER) src/data/make_dataset.py
 
+data/processed/observations_features.csv: data/processed/events.csv data/processed/observations.csv data/processed/prior_observations.csv src/features/build_features.py
+	$(PYTHON_INTERPRETER) src/features/build_features.py
 
 #################################################################################
 # Self Documenting Commands                                                     #
