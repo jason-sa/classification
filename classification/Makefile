@@ -1,4 +1,4 @@
-.PHONY: clean data lint requirements sync_data_to_s3 sync_data_from_s3
+.PHONY: clean data lint requirements train
 
 #################################################################################
 # GLOBALS                                                                       #
@@ -27,7 +27,9 @@ requirements: test_environment
 
 ## Make Dataset
 data: requirements data/processed/observations_features.csv
-	# $(PYTHON_INTERPRETER) src/data/make_dataset.py
+
+## Train model
+train: data models/final_model.pkl
 
 ## Delete all compiled Python files
 clean:
@@ -76,6 +78,9 @@ data/processed/events.csv data/processed/observations.csv data/processed/prior_o
 
 data/processed/observations_features.csv: data/processed/events.csv data/processed/observations.csv data/processed/prior_observations.csv src/features/build_features.py
 	$(PYTHON_INTERPRETER) src/features/build_features.py
+
+models/final_model.pkl: data/processed/observations_features.csv src/models/train_model.py src/models/cross_validate.py
+	$(PYTHON_INTERPRETER) src/models/train_model.py
 
 #################################################################################
 # Self Documenting Commands                                                     #
