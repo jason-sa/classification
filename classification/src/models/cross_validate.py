@@ -11,6 +11,8 @@ import numpy as np
 from sklearn.model_selection import train_test_split, cross_validate, \
                                     StratifiedKFold
 
+from skopt import BayesSearchCV
+
 RANDOM_STATE = 42
 
 
@@ -26,8 +28,8 @@ def create_Xy(df):
     returns:
         X_train, X_test, y_train, y_test
     '''
-    y = df.buy_event
-    X = df.iloc[:, 4:]
+    y = np.array(df.buy_event)
+    X = np.array(df.iloc[:, 4:])
 
     return train_test_split(X, y, random_state=RANDOM_STATE, stratify=y)
 
@@ -95,3 +97,66 @@ def log_scores(cv, m_name):
                                  'avg_f1', 'std_f1',
                                  'avg_auc', 'std_auc'],
                         index=[m_name])
+
+
+def bayes_search(X_train, y_train, model, search_params):
+    '''
+    Performs a BayesSearchCV on the provided model and search parameters.
+
+    X_train:
+        feature space array
+    y_train:
+        response array
+    model:
+        sklearn model of pipeline to be tuned
+    search_params:
+        dictionary of search parameters
+
+    return:
+        skopt cv results (dict)
+    '''
+    skf = StratifiedKFold(n_splits=3, random_state=RANDOM_STATE)
+
+    bayes_params = {
+        'estimator': model,
+        'scoring': 'roc_auc',
+        'search_spaces': search_params,
+        'n_iter': 50,
+        'cv': skf,
+        'n_jobs': 3,
+        'verbose': 1
+    }
+
+    search_cv = BayesSearchCV(**bayes_params)
+    search_cv_results = search_cv.fit(X_train,
+                                      y_train)
+
+    return search_cv_results
+
+
+def print_score_progress(optim_results):
+    '''
+    Callback for BayesSearchCV
+    Prints the best score, current score, and current iteration
+    '''
+    current_results = pd.DataFrame(optim_results.cv_results_)
+    print(f'Iteration: {current_results.shape[0]}')
+    print(f'Current AUC: ' +
+          f'{current_results.tail(1).mean_test_score.values[0]:.6f}')
+    print(f'Best AUC: {optim_results.best_score_:.6f}')
+    print()
+
+
+# def save_best_estimator(optim_results):
+#     '''
+#     BayesSearchCV callback
+#     Saves best estimator
+#     '''
+#     current_results = pd.DataFrame(search_cv.cv_results_)
+#     best_score = search_cv.best_score_
+#     current_score = current_results.tail(1).mean_test_score.values[0]
+#     if current_score == best_score:
+#         model = f'tuned_models/{model_name}_{best_score:.6f}'
+#         print(f'Saving: {model}')
+#         print()
+#         utils.save(search_cv, model)

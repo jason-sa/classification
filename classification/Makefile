@@ -65,7 +65,7 @@ test_environment:
 #################################################################################
 # PROJECT RULES                                                                 #
 #################################################################################
-data/raw/ecommerce-dataset.zip:
+data/raw/ecommerce-dataset.zip data/raw/events.csv:
 	kaggle datasets download -d retailrocket/ecommerce-dataset -p $(PROJECT_DIR)/data/raw/
 	unzip $(PROJECT_DIR)/data/raw/ecommerce-dataset.zip -d $(PROJECT_DIR)/data/raw
 	touch $(PROJECT_DIR)/data/raw/category_tree.csv
@@ -73,7 +73,7 @@ data/raw/ecommerce-dataset.zip:
 	touch $(PROJECT_DIR)/data/raw/item_properties_part1.csv
 	touch $(PROJECT_DIR)/data/raw/item_properties_part2.csv
 
-data/processed/events.csv data/processed/observations.csv data/processed/prior_observations.csv: data/raw/ecommerce-dataset.zip src/data/data_transformation.py src/data/make_dataset.py
+data/processed/events.csv data/processed/observations.csv data/processed/prior_observations.csv: data/raw/events.csv data/raw/item_properties_part1.csv data/raw/item_properties_part2.csv src/data/data_transformation.py src/data/make_dataset.py
 	$(PYTHON_INTERPRETER) src/data/make_dataset.py
 
 data/processed/observations_features.csv: data/processed/events.csv data/processed/observations.csv data/processed/prior_observations.csv src/features/build_features.py
