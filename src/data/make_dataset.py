@@ -36,6 +36,10 @@ def main(input_filepath, output_filepath):
 
     logger.info(f'wrtiting files to {output_filepath}')
 
+    # create directory if not exists
+    if not os.path.exists(output_filepath):
+        os.makedirs(output_filepath)
+
     events_out = os.path.join(output_filepath, 'events.csv')
     events_trimmed.to_csv(events_out, index=False)
 
