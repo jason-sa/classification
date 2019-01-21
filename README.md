@@ -29,7 +29,6 @@ Given this rich information about each visitor, then I wanted to try and predict
 * [Summary](https://jason-sa.github.io/2018-11-02-Will-you-buy-or-not-in-your-next-visit/) - Blog post of the results.
 
 # Project Organization
-------------
 
     ├── LICENSE
     ├── Makefile           <- Makefile with commands like `make data` or `make train`
