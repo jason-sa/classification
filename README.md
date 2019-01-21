@@ -1,9 +1,8 @@
 # Will a customer buy or not?
-==============================
 
 ## Summary
 
-This repository addresses a classification problem in the e-commerce domain, and in particular attempting to predict whether or not a visitor to a site will buy or not upon their next visit. The modeling was all done in python 3.6.
+This repository addresses a classification problem in the e-commerce domain, and in particular attempting to predict whether or not a visitor to a site will buy or not upon their next visit.
 
 The data utilized in this project was from Kaggle and provided by [RetailRocket](https://www.kaggle.com/retailrocket/ecommerce-dataset/home). The data were gathered from a real e-commerce website between May 2015 to September 2015. The data set consisted of 3 different types of data,
 
@@ -27,11 +26,9 @@ Given this rich information about each visitor, then I wanted to try and predict
 
 * [Initial Proposal](docs/Proposal.pdf) - Initial model proposal based on data search and EDA of the selected data set.
 * [Presentation](docs/Buy_or_Not.pdf) - High-level presentation of the results.
-* [Summary](docs/Summary.pdf) - Detailed summary of classification modeling results.
-* [Analysis Notebook](py_files/Retail_Rocket_Analysis.ipynb) - Jupyter notebook performing the analysis of the Retail Rocket data set.
+* [Summary](https://jason-sa.github.io/2018-11-02-Will-you-buy-or-not-in-your-next-visit/) - Blog post of the results.
 
-
-Project Organization
+# Project Organization
 ------------
 
     ├── LICENSE
